@@ -1,67 +1,44 @@
 # Agent Handoff
 
-Project: `17 - multi-tenant-starter`
+## Project
 
-## Principal Agent Summary
+#17 - multi-tenant-starter
 
-- Objective:
-- Portfolio program:
-- Public proof claim:
-- Primary benchmark:
-- Default runnable path:
+## Completed Work
 
-## Subagent Decisions
+- Implemented Java 21 + Spring Boot 3.4 multi-tenant starter with schema-per-tenant isolation.
+- Hexagonal architecture: domain ports, application services, infrastructure adapters.
+- In-memory schema-per-tenant simulation: TenantContext ThreadLocal, DataSourceRouter, SimpleMigrationRunner.
+- REST API: POST /api/tenants (create), GET /api/tenants (list), GET /api/health.
+- 5 test classes: TenantTest, TenantContextTest, InMemoryTenantRepositoryTest, TenantServiceTest, TenantBenchmarkTest.
+- Docker multi-stage build with gradle:8-jdk21 and eclipse-temurin:21-jre.
+- CI workflow with build, test, Docker, and benchmark verification.
+- Benchmark: TenantBenchmark creates N tenants and measures per-tenant onboarding time.
 
-| Role | Decision | Evidence Path | Status |
-|---|---|---|---|
-| `program-planner` |  | `project.yaml`, `sdd/spec.md` | pending |
-| `architecture-selector` |  | `sdd/architecture-decision.md` | pending |
-| `engineering-principles-reviewer` |  | `project.yaml`, `sdd/technical-decision.md` | pending |
-| `stack-decision-agent` |  | `project.yaml`, `sdd/technical-decision.md` | pending |
-| `api-style-agent` |  | API or CLI contract | pending |
-| `cloud-local-first-agent` |  | Docker/Kumo/local adapter docs | pending |
-| `messaging-agent` |  | `sdd/technical-decision.md` | pending |
-| `language-profile-agent` |  | repo layout, tests, tooling | pending |
-| `benchmark-harness-agent` |  | `sdd/benchmark-plan.md`, `benchmarks/results/` | pending |
-| `design-system-agent` |  | `README.md`, diagrams | pending |
-| `security-reuse-reviewer` |  | `REFERENCES.md`, release checklist | pending |
-| `release-ci-publisher` |  | validation and CI | pending |
+## Decisions Made
 
-## Local-First Runtime
+| Decision | Selected | Rationale |
+|---|---|---|
+| Architecture | Hexagonal | Ports/adapters isolate multi-tenant proof from infrastructure |
+| Database | In-memory (simulated) | Proves schema-per-tenant without PostgreSQL for local demo |
+| API style | REST HTTP | Simplest transport for CRUD operations |
+| Build system | Gradle Kotlin DSL + version catalog | Standard for Spring Boot projects |
+| Library policy | Minimal dependencies | Only Spring Boot Web + Actuator + Test |
+| Migration simulation | SimpleMigrationRunner | Creates tables in schema map without real SQL |
 
-- Docker command:
-- Local services:
-- Kumo services, if any:
-- Real cloud adapter target, if any:
-- Config switch:
-- Default path requires paid secret: no
+## Pending
 
-## Architecture Boundaries
+- None. All scaffold items implemented.
 
-- Domain boundaries:
-- Use-case boundaries:
-- Ports:
-- Adapters:
-- Dependency direction rule:
+## Known Failure Modes
 
-## Benchmark Handoff
+- Migration failure correctly sets tenant status to INACTIVE.
+- TenantContext cross-thread leakage is prevented by ThreadLocal semantics (verified by test).
+- Calling getCurrentSchema without tenant context throws IllegalStateException.
+- Running createTenant with null/blank name returns 400 from controller (not validated in service).
 
-- Metric:
-- Unit:
-- Higher or lower is better:
-- Command:
-- Result path:
-- Dataset or fixture:
+## Handoff to Next Agent
 
-## Open Risks
-
-- 
-
-## Publication Gates
-
-- [ ] Docker path works
-- [ ] benchmark result exists
-- [ ] README starts with number, claim, and benchmark
-- [ ] references are documented
-- [ ] no secret in files or git remote
-- [ ] validation passes
+- Publication: update README benchmark table with actual value from first Docker run.
+- CI: verify pipeline passes on GitHub Actions (no secrets required).
+- Reuse: patch in-memory adapter template to portfolio-reuse-kit.

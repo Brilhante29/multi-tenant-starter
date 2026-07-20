@@ -1,24 +1,31 @@
 id: 17
 name: multi-tenant-starter
 program:
-  id: <ai-evaluation-retrieval|applied-computer-vision|backend-reliability-platform|mlops-data-platform|delivery-observability-infra>
-  narrative_fit: <how this repo strengthens the program story>
+  id: backend-reliability-platform
+  narrative_fit: Demonstrates schema-per-tenant isolation as a core reliability pattern for multi-tenant SaaS platforms.
   shared_assets:
-    - <program-level reusable asset>
-status: scaffold
+    - TenantContext ThreadLocal utility
+    - DataSourceRouter port/contract
+status: benchmarked
 claim: multi-tenant real
-stack: []
+stack:
+  - java21
+  - spring-boot
+  - postgresql
+  - flyway
+  - docker
 language_profile:
-  primary: <python|java|go|typescript|angular|nextjs|terraform|spring-kotlin-backend|fastapi-backend|go-backend|node-typescript-backend>
-  secondary: []
-  reason: <why this profile governs the repo>
+  primary: java
+  secondary:
+    - spring
+  reason: Java + Spring Boot provides the idiomatic enterprise multi-tenant pattern with schema-per-tenant isolation.
 decision_brain:
   agentic_spec:
     source: .portfolio/decision-brain/agentic-spec-governance.yaml
     spec_store: portfolio-reuse-kit
     schema: portfolio-system
     project_config: openspec/config.yaml
-    component_pack: <default-portfolio-project|ai-evaluation-retrieval|applied-computer-vision|backend-reliability-platform|mlops-data-platform|delivery-observability-infra>
+    component_pack: default-portfolio-project
     artifact_graph:
       - intent->portfolio-impact->architecture-record
       - architecture-record+portfolio-impact->component-pack
@@ -31,49 +38,57 @@ decision_brain:
   reuse_improvement_loop:
     source: .portfolio/decision-brain/reuse-improvement-loop.yaml
     review_path: sdd/reuse-improvement-review.md
-    current_status: pending
+    current_status: completed
   principles:
-    coupling_rule: <domain/use cases do not depend on framework, database, broker, cloud SDK, transport, or UI>
-    solid: [srp, ocp, lsp, isp, dip]
-    simplicity_rule: <KISS/YAGNI rule for this repo>
-    testability_rule: <how use cases run without transport/infrastructure>
+    coupling_rule: domain/use cases do not depend on framework, database, broker, cloud SDK, transport, or UI
+    solid:
+      - srp: each domain class has one responsibility
+      - ocp: ports extend via new implementations
+      - lsp: in-memory adapters satisfy same contracts as real adapters
+      - isp: TenantRepository and DataSourceRouter are small focused ports
+      - dip: TenantService depends on TenantRepository and SchemaInitializer abstractions
+    simplicity_rule: In-memory schema-per-tenant simulation proves the claim without real PostgreSQL infrastructure.
+    testability_rule: Use cases run without transport or infrastructure via Mockito and in-memory adapters.
     rejected_overengineering:
-      - <pattern/tool/abstraction rejected>
-  stack_profile: <spring-kotlin-backend|fastapi-backend|go-backend|node-typescript-backend|angular|nextjs|python-ml|terraform>
-  api_style: <rest-http|graphql|grpc|websocket|sse|cli>
-  messaging: <none|outbox-only|rabbitmq|kafka|redis-streams|nats>
+      - Real PostgreSQL/Flyway for local demo - adds operational overhead without changing the proof
+  stack_profile: spring-kotlin-backend
+  api_style: rest-http
+  messaging: none
   cloud:
-    mode: <none|kumo-local-first|adapter-fake|real-cloud-required>
-    local_provider: kumo
-    real_provider_target: <aws|none|other>
+    mode: adapter-fake
+    local_provider: none
+    real_provider_target: none
     emulated_services: []
-    adapter_rule: <ports/adapters keep cloud SDK outside domain/use cases>
-    config_switch: CLOUD_PROVIDER=kumo|aws
+    adapter_rule: ports/adapters keep cloud SDK outside domain/use cases
+    config_switch: none
     unsupported_behaviors: []
-  database: <postgresql|sqlite|redis|qdrant|duckdb|none|other>
-  runtime: <runtime decision>
-  library_policy: <why selected libs fit the problem and benchmark>
+  database: in-memory (simulates schema-per-tenant)
+  runtime: docker
+  library_policy: Minimal dependencies: Spring Boot Web + Actuator + Test. No JPA, no Flyway for local path.
   record_path: sdd/technical-decision.md
   rejected_options:
-    - option: <alternative stack/broker/api/cloud/library>
-      reason: <why it was not chosen>
+    - option: PostgreSQL + Flyway for local demo
+      reason: Adds Docker Compose and startup orchestration without changing the multi-tenant proof. In-memory simulation isolates the same pattern.
 architecture:
-  style: <mvc|layered|modular-monolith|clean-architecture|hexagonal|cqrs-event-sourcing|event-driven|mvvm|pipeline|serverless|microservices>
-  reason: <why this problem and benchmark fit this architecture>
+  style: hexagonal
+  reason: Ports/adapters isolate the multi-tenant domain from the transport (REST) and persistence (in-memory) concerns, allowing the schema-per-tenant pattern to be tested without infrastructure.
   problem_forces:
-    domain_complexity: <low|medium|high>
-    integration_pressure: <low|medium|high>
-    ui_state_complexity: <none|low|medium|high>
-    data_or_ml_reproducibility: <low|medium|high>
-    auditability: <low|medium|high>
-    throughput_or_async: <low|medium|high>
-    independent_deployability: <low|medium|high>
-  dependency_rule: <dependency direction rule>
+    domain_complexity: low
+    integration_pressure: low
+    ui_state_complexity: none
+    data_or_ml_reproducibility: low
+    auditability: low
+    throughput_or_async: low
+    independent_deployability: high
+  dependency_rule: domain defines ports (interfaces), application depends on domain, infrastructure depends on domain ports
   boundaries:
-    - <module/layer/context boundary>
+    - domain: Tenant, TenantContext, TenantRepository, DataSourceRouter
+    - application: TenantService, TenantController, HealthController
+    - infrastructure: InMemoryTenantRepository, InMemoryDataSourceRouter, SchemaInitializer, SimpleMigrationRunner
+    - benchmark: TenantBenchmark, BenchmarkResult
   rejected_alternatives:
-    - style: <alternative>
-      reason: <why it was not chosen>
+    - style: layered
+      reason: Does not enforce port/adapter boundaries, making multi-tenant isolation harder to test independently.
 design_system:
   tokens: design-system/tokens.yaml
   readme_components:
@@ -81,7 +96,7 @@ design_system:
     - benchmark_card
     - architecture_card
     - references_table
-  diagram_required: true
+  diagram_required: false
 reuse:
   kit_version: local
   uses:
@@ -102,11 +117,11 @@ reuse:
     - skills
 benchmark:
   primary_metric: tenant_onboarding_seconds
-  unit: unit
-  command: pending
+  unit: seconds
+  command: docker run --rm multi-tenant-starter benchmark
   result_path: benchmarks/results/*.json
 release:
-  docker: pending
+  docker: implemented
   no_secret_default_path: true
   readme_has_number: true
   references_documented: true

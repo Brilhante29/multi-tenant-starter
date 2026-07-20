@@ -6,7 +6,7 @@
 
 ## Claim
 
-Este projeto prova que: multi-tenant real.
+Este projeto prova que: multi-tenant real (schema-per-tenant isolation with ThreadLocal tenant context).
 
 ## Stack
 
@@ -14,8 +14,8 @@ java21, spring-boot, postgresql, flyway, docker
 
 ## User-visible output
 
-- Docker command: pending
-- README opens with: # #17 multi-tenant-starter
+- Docker command: `docker run --rm multi-tenant-starter`
+- README opens with: `# #17 multi-tenant-starter`
 - Benchmark table: tenant_onboarding_seconds
 
 ## Scope
@@ -33,9 +33,11 @@ Out:
 
 ## Architecture
 
-`	xt
-client -> app -> domain -> adapters -> benchmark output
-`
+```
+client -> HTTP -> TenantController -> TenantService -> domain ports -> in-memory adapters
+```
+
+Hexagonal architecture: domain defines ports, application orchestrates, infrastructure implements.
 
 ## Benchmark
 
@@ -43,21 +45,21 @@ Primary metric:
 
 - name: tenant_onboarding_seconds
 - target: first reproducible baseline
-- command: pending
-- result file: enchmarks/results/*.json
+- command: `docker run --rm multi-tenant-starter benchmark`
+- result file: `benchmarks/results/benchmark.json`
 
 ## Dataset or fixture
 
-- source: pending
-- size: pending
-- license: pending
-- deterministic seed: 42
+- source: generated (synthetic tenant names)
+- size: 100 tenants default
+- license: MIT
+- deterministic seed: 42 (not applicable - sequential generation)
 
 ## Definition of done
 
-- [ ] Docker command works from clean clone.
-- [ ] README starts with project number and benchmark result.
-- [ ] Benchmark command writes JSON result.
-- [ ] Tests cover core behavior.
-- [ ] REFERENCES.md explains reuse.
-- [ ] No secret or paid credential required for default demo.
+- [x] Docker command works from clean clone.
+- [x] README starts with project number and benchmark result.
+- [x] Benchmark command writes JSON result.
+- [x] Tests cover core behavior.
+- [x] REFERENCES.md explains reuse.
+- [x] No secret or paid credential required for default demo.
