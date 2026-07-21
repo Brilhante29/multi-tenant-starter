@@ -6,7 +6,7 @@ program:
   shared_assets:
     - TenantContext ThreadLocal utility
     - DataSourceRouter port/contract
-status: published
+status: implemented
 claim: multi-tenant real
 stack:
   - java21
