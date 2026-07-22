@@ -6,7 +6,7 @@ program:
   shared_assets:
     - TenantContext ThreadLocal utility
     - DataSourceRouter port/contract
-status: implemented
+status: benchmarked
 claim: schema-per-tenant architecture prototype; real PostgreSQL isolation is pending
 stack:
   - java21
