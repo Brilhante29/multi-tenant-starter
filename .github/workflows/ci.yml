@@ -35,4 +35,8 @@ jobs:
 
       - name: Verify benchmark output
         run: |
-          docker run --rm multi-tenant-starter benchmark 2>&1 | head -1 | grep -q "tenant_onboarding_seconds" && echo "Benchmark output valid"
+          docker run --rm multi-tenant-starter benchmark 2>&1 \
+            | grep -F '"metric":"tenant_onboarding_seconds"' \
+            | tail -1 > benchmark-line.json
+          python3 -m json.tool benchmark-line.json >/dev/null
+          echo "Benchmark output valid"
