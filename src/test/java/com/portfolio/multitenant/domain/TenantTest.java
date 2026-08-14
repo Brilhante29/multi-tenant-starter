@@ -3,58 +3,33 @@ package com.portfolio.multitenant.domain;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
-import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class TenantTest {
 
     @Test
-    void shouldCreateTenantWithAllFields() {
-        String id = UUID.randomUUID().toString();
-        Instant now = Instant.now();
+    void activationReturnsANewActiveTenant() {
+        Instant created = Instant.parse("2026-08-14T00:00:00Z");
+        Instant activated = created.plusSeconds(1);
+        Tenant provisioning = new Tenant("id", "Acme", "tenant_schema", Tenant.Status.PROVISIONING, created, null);
 
-        Tenant tenant = new Tenant(id, "test-tenant", "schema_1234", Tenant.Status.ACTIVE, now);
+        Tenant active = provisioning.activate(activated);
 
-        assertEquals(id, tenant.getId());
-        assertEquals("test-tenant", tenant.getName());
-        assertEquals("schema_1234", tenant.getSchema());
-        assertEquals(Tenant.Status.ACTIVE, tenant.getStatus());
-        assertEquals(now, tenant.getCreatedAt());
+        assertEquals(Tenant.Status.PROVISIONING, provisioning.getStatus());
+        assertEquals(Tenant.Status.ACTIVE, active.getStatus());
+        assertEquals(activated, active.getActivatedAt());
     }
 
     @Test
-    void shouldTransitionThroughStatuses() {
-        Tenant tenant = new Tenant();
-        tenant.setId("1");
-        tenant.setStatus(Tenant.Status.PROVISIONING);
-        assertEquals(Tenant.Status.PROVISIONING, tenant.getStatus());
+    void equalityUsesOnlyTheStableId() {
+        Tenant first = new Tenant("id", "A", "schema_a", Tenant.Status.PROVISIONING, Instant.EPOCH, null);
+        Tenant same = new Tenant("id", "B", "schema_b", Tenant.Status.ACTIVE, Instant.EPOCH, Instant.EPOCH);
+        Tenant other = new Tenant("other", "A", "schema_a", Tenant.Status.PROVISIONING, Instant.EPOCH, null);
 
-        tenant.setStatus(Tenant.Status.ACTIVE);
-        assertEquals(Tenant.Status.ACTIVE, tenant.getStatus());
-
-        tenant.setStatus(Tenant.Status.INACTIVE);
-        assertEquals(Tenant.Status.INACTIVE, tenant.getStatus());
-    }
-
-    @Test
-    void equalityShouldBeBasedOnId() {
-        Tenant t1 = new Tenant("1", "a", "s1", Tenant.Status.ACTIVE, Instant.now());
-        Tenant t2 = new Tenant("1", "b", "s2", Tenant.Status.INACTIVE, Instant.now());
-        Tenant t3 = new Tenant("2", "a", "s1", Tenant.Status.ACTIVE, Instant.now());
-
-        assertEquals(t1, t2);
-        assertNotEquals(t1, t3);
-        assertEquals(t1.hashCode(), t2.hashCode());
-    }
-
-    @Test
-    void toStringShouldIncludeFields() {
-        Tenant tenant = new Tenant("id1", "my-tenant", "schema_x", Tenant.Status.ACTIVE, Instant.now());
-        String str = tenant.toString();
-        assertTrue(str.contains("id1"));
-        assertTrue(str.contains("my-tenant"));
-        assertTrue(str.contains("schema_x"));
-        assertTrue(str.contains("ACTIVE"));
+        assertEquals(first, same);
+        assertEquals(first.hashCode(), same.hashCode());
+        assertNotEquals(first, other);
     }
 }

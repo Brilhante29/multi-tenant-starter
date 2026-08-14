@@ -14,6 +14,14 @@ public final class TenantContext {
         return CURRENT_TENANT.get();
     }
 
+    public static String requireTenantId() {
+        String tenantId = CURRENT_TENANT.get();
+        if (tenantId == null) {
+            throw new IllegalStateException("No tenant context set");
+        }
+        return tenantId;
+    }
+
     public static void clear() {
         CURRENT_TENANT.remove();
     }

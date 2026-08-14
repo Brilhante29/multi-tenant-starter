@@ -4,19 +4,22 @@ program:
   id: backend-reliability-platform
   narrative_fit: Demonstrates schema-per-tenant isolation as a core reliability pattern for multi-tenant SaaS platforms.
   shared_assets:
-    - TenantContext ThreadLocal utility
-    - DataSourceRouter port/contract
-status: benchmarked
-claim: schema-per-tenant architecture prototype; real PostgreSQL isolation is pending
+    - TenantContext scoped execution pattern
+    - Benchmark Result V2 contract
+status: implementation
+claim: PostgreSQL schema-per-tenant isolation with atomic onboarding, rollback, constraints, and concurrent access evidence
 stack:
   - java21
   - spring-boot
+  - spring-jdbc
+  - postgresql17
+  - flyway
   - docker
 language_profile:
   primary: java
   secondary:
     - spring
-  reason: Java and Spring Boot expose the enterprise boundary; PostgreSQL isolation remains the required next implementation.
+  reason: Java and Spring Boot expose the enterprise boundary while Spring JDBC keeps PostgreSQL schema routing and transactional DDL visible.
 decision_brain:
   agentic_spec:
     source: .portfolio/decision-brain/agentic-spec-governance.yaml
@@ -42,48 +45,50 @@ decision_brain:
     solid:
       - srp: each domain class has one responsibility
       - ocp: ports extend via new implementations
-      - lsp: in-memory adapters satisfy same contracts as real adapters
-      - isp: TenantRepository and DataSourceRouter are small focused ports
-      - dip: TenantService depends on TenantRepository and SchemaInitializer abstractions
-    simplicity_rule: In-memory adapters demonstrate boundaries only; they do not prove database-level tenant isolation.
-    testability_rule: Use cases run without transport or infrastructure via Mockito and in-memory adapters.
+      - lsp: test doubles and PostgreSQL adapters obey the same narrow port contracts
+      - isp: tenant registry, schema provisioning, tenant records, id generation, and transactions are separate ports
+      - dip: application services depend only on domain and application ports
+    simplicity_rule: Use one PostgreSQL database and one schema per tenant; no broker, ORM, or cloud service is needed for this proof.
+    testability_rule: Unit tests exercise use cases through ports; Docker Compose integration tests prove database isolation, rollback, constraints, and concurrency.
     rejected_overengineering:
       - RabbitMQ or Kafka before transactional tenant isolation is implemented
-  stack_profile: java-spring-backend
+  stack_profile: java-spring-postgresql-backend
   api_style: rest-http
   messaging: none
   cloud:
-    mode: adapter-fake
-    local_provider: none
+    mode: local-first
+    local_provider: docker-postgresql
     real_provider_target: none
     emulated_services: []
     adapter_rule: ports/adapters keep cloud SDK outside domain/use cases
     config_switch: none
     unsupported_behaviors: []
-  database: in-memory (simulates schema-per-tenant)
-  runtime: docker
-  library_policy: "Current prototype uses Spring Boot Web and Actuator. Target implementation adds PostgreSQL, Flyway, JDBC, and Testcontainers."
+  database: postgresql-17 schema-per-tenant
+  runtime: docker-compose
+  library_policy: "Spring JDBC exposes transaction and schema boundaries; Flyway owns control-plane migrations; Compose provides PostgreSQL parity without nested-Docker assumptions. JPA and messaging are excluded."
   record_path: sdd/technical-decision.md
   rejected_options:
-    - option: PostgreSQL + Flyway for local demo
-      reason: Deferred only while the repository is explicitly a prototype; PostgreSQL and Flyway are required before publication.
+    - option: in-memory schema simulation
+      reason: Cannot prove database constraints, transactional DDL, rollback, or tenant leakage prevention.
+    - option: Hibernate multi-tenancy
+      reason: Hides the SQL and connection boundaries that this repository exists to prove.
 architecture:
   style: hexagonal
-  reason: Ports/adapters isolate the multi-tenant domain from the transport (REST) and persistence (in-memory) concerns, allowing the schema-per-tenant pattern to be tested without infrastructure.
+  reason: Ports/adapters isolate tenant policy from REST and PostgreSQL while keeping schema routing and transactional DDL explicit and testable.
   problem_forces:
     domain_complexity: low
-    integration_pressure: low
+    integration_pressure: high
     ui_state_complexity: none
     data_or_ml_reproducibility: low
-    auditability: low
-    throughput_or_async: low
+    auditability: medium
+    throughput_or_async: medium
     independent_deployability: high
   dependency_rule: domain defines ports (interfaces), application depends on domain, infrastructure depends on domain ports
   boundaries:
-    - domain: Tenant, TenantContext, TenantRepository, DataSourceRouter
-    - application: TenantService, TenantController, HealthController
-    - infrastructure: InMemoryTenantRepository, InMemoryDataSourceRouter, SchemaInitializer, SimpleMigrationRunner
-    - benchmark: TenantBenchmark, BenchmarkResult
+    - domain: Tenant, TenantRecord, TenantContext, repository and provisioning ports
+    - application: TenantService, TenantDataService, TransactionRunner
+    - infrastructure: PostgreSQL adapters, Flyway control migration, REST transport
+    - benchmark: real onboarding and isolated-query workload with integrity counters
   rejected_alternatives:
     - style: layered
       reason: Does not enforce port/adapter boundaries, making multi-tenant isolation harder to test independently.
@@ -114,10 +119,10 @@ reuse:
     - templates
     - skills
 benchmark:
-  primary_metric: tenant_onboarding_seconds
-  unit: seconds
-  command: docker run --rm multi-tenant-starter benchmark
-  result_path: benchmarks/results/benchmark.json
+  primary_metric: tenant_onboarding_p50_ms
+  unit: milliseconds
+  command: ./tools/run-benchmark.ps1
+  result_path: benchmarks/results/multi-tenant-starter-v2.json
 release:
   docker: implemented
   no_secret_default_path: true

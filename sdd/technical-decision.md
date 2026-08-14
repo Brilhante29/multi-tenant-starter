@@ -2,101 +2,40 @@
 
 ## Status
 
-Accepted
+Accepted for implementation.
 
-## Decision Type
+## Selected Stack
 
-stack, api-style, database, library, runtime
+- Java 21 and Gradle wrapper with dependency locking.
+- Spring Boot 3.4, Web, Actuator, JDBC, and transaction support.
+- PostgreSQL 17.6 Alpine for the local-first runtime.
+- Flyway for the shared control-plane schema.
+- A versioned SQL migration executed on the transaction-bound JDBC connection for each tenant schema.
+- Docker Compose for real-database integration tests without nested-Docker assumptions.
 
-## Context
+Java is retained. A Java-to-Kotlin rewrite would be cosmetic here and would expand the change surface without improving tenancy evidence.
 
-Project: multi-tenant-starter
-Problem: Prove schema-per-tenant isolation with a reproducible benchmark.
-Portfolio program: backend-reliability-platform
-Public signal: Java + Spring multi-tenant with architecture boundaries, tests, and benchmark evidence.
-Benchmark: tenant_onboarding_seconds
+## Database Decisions
 
-## Selected Option
+The `public.tenants` registry has UUID, nonblank-name, unique-name, unique-schema, schema-pattern, status, and activation-state constraints. Tenant schemas contain their own migration history and `tenant_records` table. The tenant migration binds rows to the schema owner with a database CHECK constraint.
 
-Selected: Java 21 + Spring Boot 3.4 + in-memory schema-per-tenant
+Flyway owns the stable shared schema. Tenant migrations run through Spring's transaction-bound connection because atomic registry-plus-DDL rollback is part of the proof.
 
-Reason:
+## API and Messaging
 
-Java + Spring Boot is the idiomatic enterprise choice for multi-tenant SaaS patterns. Schema-per-tenant is the strongest isolation model. In-memory simulation proves the pattern without requiring PostgreSQL infrastructure for the default demo. The benchmark measures tenant creation throughput (schema generation + migration + registration).
+REST is selected for synchronous onboarding and record inspection. GraphQL adds no caller benefit to this narrow command/query surface. Messaging is `none`: no asynchronous semantic, replay, routing, or DLQ requirement exists.
 
-## Decision Brain Fields
+## Local First and Cloud
 
-- Stack profile: spring-kotlin-backend
-- API style: rest-http
-- Messaging: none
-- Cloud mode: adapter-fake
-- Database/runtime: in-memory (simulates schema-per-tenant), Docker runtime
-- Library policy: Minimal dependencies - Spring Boot Web, Actuator, Test. No JPA or Flyway for local path.
+Docker Compose starts the application and PostgreSQL without credentials outside the local stack. Kumo is not used because the proof has no AWS-like behavior. A managed PostgreSQL provider can replace the datasource without entering domain or application code.
 
-## Engineering Principles
+## Library Policy
 
-Coupling boundary:
+Spring JDBC is selected over JPA so schema-qualified SQL and transactional DDL remain explicit. Flyway owns stable control migrations; a Compose test service provides PostgreSQL parity. No general-purpose abstraction is added until a second storage strategy needs it.
 
-Domain/use cases must not depend on framework, DB, broker, cloud SDK, transport, or UI.
+## Failure Semantics
 
-SOLID application:
-
-- SRP: Tenant owns identity/state; TenantRepository owns persistence contract; DataSourceRouter owns query routing.
-- OCP: New repository implementations (e.g., PostgreSQL) extend without modifying domain.
-- LSP: InMemoryTenantRepository and future PostgresTenantRepository share the same contract.
-- ISP: TenantRepository (4 methods) and DataSourceRouter (4 methods) are minimal focused ports.
-- DIP: TenantService depends on TenantRepository and SchemaInitializer abstractions.
-
-Simplicity:
-
-- KISS: In-memory ConcurrentHashMap for tenants + Map for schema data. No ORM, no connection pool.
-- YAGNI: No JPA/Hibernate, no Flyway, no Docker Compose, no connection pooling for local demo.
-- DRY: Migration runner is a single method; no duplicated SQL between tenants.
-
-Testability evidence:
-
-- TenantService test with Mockito: verifies tenant creation lifecycle without infrastructure.
-- InMemoryTenantRepository test: verifies CRUD with plain JUnit.
-- TenantContext test: verifies ThreadLocal isolation across threads.
-
-## Rejected Options
-
-| Option | Why rejected |
-|---|---|
-| PostgreSQL + Flyway for local demo | Adds operational overhead (Docker Compose, startup time) without changing the schema-per-tenant proof. |
-| JPA/Hibernate | ORM complexity not needed for an in-memory proof; adds unnecessary coupling. |
-| Testcontainers | Valid for real-database integration tests but over-engineering for the local-first benchmark path. |
-| Multi-module Gradle | Single module is simpler and sufficient for a single-context proof. |
-
-## API Contract
-
-Contract artifact: Implicit REST contract (no OpenAPI spec for this scope)
-
-## Cloud Local-First
-
-Local provider: none (adapter fake)
-
-Real provider target: none
-
-Config switch: none
-
-## Benchmark Impact
-
-Expected impact: tenant_onboarding_seconds measures the throughput of in-memory tenant creation including schema simulation and migration.
-
-Validation command:
-```bash
-docker build -t multi-tenant-starter .
-docker run --rm multi-tenant-starter benchmark
-```
-
-## Operational Cost
-
-- Docker services added: none (single JVM container)
-- Local demo complexity: low
-- Failure case required: yes (migration failure sets tenant to INACTIVE)
-
-## Follow-up
-
-- If benchmark shows unexpectedly high latency, review SimpleMigrationRunner for unnecessary synchronization.
-- If real PostgreSQL integration is needed, add PostgresTenantRepository and Flyway.
+- Any onboarding exception rolls back registry and schema creation.
+- Invalid or inactive tenant access fails before tenant data SQL runs.
+- Context is always cleared after scoped work.
+- Constraint violations remain database errors and are mapped to HTTP conflict where appropriate.

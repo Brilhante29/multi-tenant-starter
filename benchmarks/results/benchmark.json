@@ -1,1 +1,0 @@
-{"project":"multi-tenant-starter","metric":"tenant_onboarding_seconds","value":1.5446677E-4,"unit":"seconds","iterations":100,"timestamp":"2026-07-20T21:04:33.887988457Z","environment":{"os":"Linux","arch":"amd64","cpus":6},"command":"docker run --rm multi-tenant-starter benchmark"}

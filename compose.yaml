@@ -1,0 +1,56 @@
+services:
+  postgres:
+    image: postgres:17.6-alpine
+    environment:
+      POSTGRES_DB: multitenant
+      POSTGRES_USER: multitenant
+      POSTGRES_PASSWORD: multitenant
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U multitenant -d multitenant"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  app:
+    image: multi-tenant-starter:benchmark
+    build:
+      context: .
+      args:
+        SOURCE_COMMIT: ${SOURCE_COMMIT:-unknown}
+        DEPENDENCY_LOCK_DIGEST: ${DEPENDENCY_LOCK_DIGEST:-unknown}
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/multitenant
+      DATABASE_USER: multitenant
+      DATABASE_PASSWORD: multitenant
+      POSTGRES_IMAGE_DIGEST: ${POSTGRES_IMAGE_DIGEST:-sha256:0000000000000000000000000000000000000000000000000000000000000000}
+      SOURCE_COMMIT: ${SOURCE_COMMIT:-0000000000000000000000000000000000000000}
+      CLEAN_TREE: ${CLEAN_TREE:-true}
+      APP_IMAGE_DIGEST: ${APP_IMAGE_DIGEST:-sha256:0000000000000000000000000000000000000000000000000000000000000000}
+      DEPENDENCY_LOCK_DIGEST: ${DEPENDENCY_LOCK_DIGEST:-sha256:0000000000000000000000000000000000000000000000000000000000000000}
+      BENCHMARK_OUTPUT: /app/benchmarks/results/multi-tenant-starter-v2.json
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./benchmarks/results:/app/benchmarks/results
+
+  test:
+    profiles: ["test"]
+    build:
+      context: .
+      target: build
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/multitenant
+      DATABASE_USER: multitenant
+      DATABASE_PASSWORD: multitenant
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["./gradlew", "integrationTest", "--no-daemon"]
+
+volumes:
+  postgres-data:
