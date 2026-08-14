@@ -3,11 +3,9 @@ WORKDIR /app
 COPY gradlew gradlew
 COPY gradle gradle
 COPY build.gradle.kts settings.gradle.kts gradle.lockfile ./
-RUN --mount=type=cache,target=/root/.gradle \
-    chmod +x gradlew && ./gradlew dependencies --no-daemon --quiet
+RUN chmod +x gradlew && ./gradlew dependencies --no-daemon --quiet
 COPY src ./src
-RUN --mount=type=cache,target=/root/.gradle \
-    ./gradlew test bootJar --no-daemon
+RUN ./gradlew test bootJar --no-daemon
 
 ARG SOURCE_COMMIT=unknown
 ARG DEPENDENCY_LOCK_DIGEST=unknown

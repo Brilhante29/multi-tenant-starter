@@ -28,11 +28,11 @@ This repository is the tenancy boundary for the platform. It demonstrates that a
 
 ## Acceptance Criteria
 
-- [ ] Default runtime uses PostgreSQL, never an in-memory schema simulation.
-- [ ] Failed onboarding leaves neither registry row nor schema.
-- [ ] Tenant A cannot read or write Tenant B records through the application path.
-- [ ] A database constraint rejects a row whose owner differs from its schema tenant.
-- [ ] Concurrent onboarding creates unique schemas and preserves isolation.
-- [ ] Benchmark has at least three repetitions, warmup, zero failures, and zero leakage.
-- [ ] Result records source commit, image IDs, dependency lock hash, PostgreSQL version, and comparability key.
-- [ ] README opens with #17, measured result, and explicit limits.
+- [x] Default runtime uses PostgreSQL, never an in-memory schema simulation.
+- [x] Failed onboarding leaves neither registry row nor schema.
+- [x] Tenant A cannot read or write Tenant B records through the application path.
+- [x] A database constraint rejects a row whose owner differs from its schema tenant.
+- [x] Concurrent onboarding creates unique schemas and preserves isolation.
+- [x] Benchmark has at least three repetitions, warmup, zero failures, and zero leakage.
+- [x] Result records source commit, image IDs, dependency lock hash, PostgreSQL version, and comparability key.
+- [x] README opens with #17, measured result, and explicit limits.

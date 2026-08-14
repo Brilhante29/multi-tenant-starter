@@ -2,10 +2,11 @@
 
 ## Pre-release
 
-- [x] Tests pass locally: `gradle test`
+- [x] Unit tests pass in the Docker build: `./gradlew test`
+- [x] PostgreSQL tests pass: `docker compose --profile test run --rm test`
 - [x] Docker build: `docker build -t multi-tenant-starter .`
-- [x] Docker run: `docker run --rm multi-tenant-starter` (health endpoint)
-- [x] Docker benchmark: `docker run --rm multi-tenant-starter benchmark`
+- [x] Docker runtime: `docker compose up --build app` (Actuator health endpoint)
+- [x] Docker benchmark: `./tools/run-benchmark.ps1`
 - [x] Benchmark JSON produced in `benchmarks/results/`
 - [x] README has project number, claim, and benchmark result
 - [x] REFERENCES.md complete

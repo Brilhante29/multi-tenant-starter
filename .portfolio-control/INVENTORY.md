@@ -2,20 +2,22 @@
 
 ## Identity
 
-- **Program:** <program>
-- **Status:** scaffold
-- **Proves:** multi-tenant real
-- **Primary benchmark:** `tenant_onboarding_seconds`
+- **Program:** backend-reliability-platform
+- **Status:** ready locally; publication intentionally pending
+- **Proves:** PostgreSQL schema-per-tenant isolation and atomic onboarding
+- **Primary benchmark:** `tenant_onboarding_p50_ms = 14.498945`
 
 ## Evidence Map
 
 | Evidence | Location | State |
 |---|---|---|
-| Specification | `sdd/spec.md` | required |
-| Architecture decision | `sdd/architecture-decision.md` | required |
-| Benchmark plan | `sdd/benchmark-plan.md` | required |
-| Benchmark result | `benchmarks/results/` | pending |
-| OpenSpec verification | `openspec/artifacts/verification.md` | required |
-| Reuse review | `sdd/reuse-improvement-review.md` | required |
+| Specification | `sdd/spec.md` | complete |
+| Architecture decision | `sdd/architecture-decision.md` | complete |
+| Technical decision | `sdd/technical-decision.md` | complete |
+| Benchmark plan | `sdd/benchmark-plan.md` | complete |
+| Benchmark result | `benchmarks/results/multi-tenant-starter-v2.json` | validated |
+| PostgreSQL tests | `src/integrationTest/` | 4 passed |
+| OpenSpec verification | `openspec/artifacts/verification.md` | complete |
+| Reuse review | `sdd/reuse-improvement-review.md` | complete |
 
-This file is the project-level inventory. Update it whenever a new proof artifact, reusable component, or architectural decision appears.
+Implementation source `08faedad0ac094302c645aeef4338541afebe88a` produced zero leakage and zero failures across three benchmark repetitions.

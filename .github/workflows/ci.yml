@@ -4,39 +4,59 @@ on:
   push:
     branches: [main, "codex/**", "agent/**"]
   pull_request:
-    branches: [main, "codex/**", "agent/**"]
+    branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
-  build-and-test:
+  verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
 
       - name: Set up JDK 21
         uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.7.1
         with:
           java-version: "21"
-          distribution: "temurin"
+          distribution: temurin
 
-      - name: Setup Gradle
+      - name: Set up Gradle
         uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.4
 
-      - name: Build with Gradle
-        run: ./gradlew bootJar --no-daemon
-
-      - name: Run tests
+      - name: Unit tests
         run: ./gradlew test --no-daemon
 
-      - name: Build Docker image
-        run: docker build -t multi-tenant-starter .
+      - name: PostgreSQL isolation tests
+        run: docker compose -p multi-tenant-starter-ci --profile test run --rm test
 
-      - name: Run benchmark in Docker
-        run: docker run --rm multi-tenant-starter benchmark
-
-      - name: Verify benchmark output
+      - name: REST smoke test
+        shell: bash
         run: |
-          docker run --rm multi-tenant-starter benchmark 2>&1 \
-            | grep -F '"metric":"tenant_onboarding_seconds"' \
-            | tail -1 > benchmark-line.json
-          python3 -m json.tool benchmark-line.json >/dev/null
-          echo "Benchmark output valid"
+          docker compose -p multi-tenant-starter-smoke up --build -d app
+          for attempt in {1..30}; do
+            if curl --fail --silent http://localhost:8080/actuator/health >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose -p multi-tenant-starter-smoke logs app
+          exit 1
+
+      - name: Benchmark V2
+        run: ./tools/run-benchmark.sh
+
+      - name: Repository validation
+        shell: pwsh
+        run: ./tools/validate-project.ps1 -SkipDocker
+
+      - name: Cleanup
+        if: always()
+        shell: bash
+        run: |
+          docker compose -p multi-tenant-starter-ci --profile test down -v --remove-orphans
+          docker compose -p multi-tenant-starter-smoke down -v --remove-orphans
+          docker compose -p multi-tenant-starter-benchmark down -v --remove-orphans

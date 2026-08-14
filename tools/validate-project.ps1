@@ -43,7 +43,14 @@ $requiredFiles = @(
   "sdd/architecture-decision.md",
   "sdd/technical-decision.md",
   "sdd/agent-handoff.md",
-  "sdd/reuse-improvement-review.md"
+  "sdd/reuse-improvement-review.md",
+  "compose.yaml",
+  "gradle.lockfile",
+  "tools/run-benchmark.ps1",
+  "tools/run-benchmark.sh",
+  "tools/validate-benchmark.py",
+  "benchmarks/results/multi-tenant-starter-v2.json",
+  "openspec/artifacts/verification.md"
 )
 foreach ($file in $requiredFiles) { Require-File $file }
 
@@ -83,21 +90,7 @@ try {
     Invoke-Checked "benchmark JSON validation: $($file.Name)" { python -m json.tool $file.FullName | Out-Null }
   }
 
-  if (Test-Path -LiteralPath (Join-Path $root "src") -PathType Container) {
-    $previousPythonPath = $env:PYTHONPATH
-    $srcPath = Join-Path $root "src"
-    if ($previousPythonPath) {
-      $env:PYTHONPATH = $srcPath + [System.IO.Path]::PathSeparator + $previousPythonPath
-    } else {
-      $env:PYTHONPATH = $srcPath
-    }
-    Invoke-Checked "python compile src" { python -m compileall -q (Join-Path $root "src") }
-    if (Test-Path -LiteralPath (Join-Path $root "tests") -PathType Container) {
-      Invoke-Checked "python compile tests" { python -m compileall -q (Join-Path $root "tests") }
-      Invoke-Checked "python unittest" { python -m unittest discover -s (Join-Path $root "tests") -v }
-    }
-    $env:PYTHONPATH = $previousPythonPath
-  }
+  Invoke-Checked "benchmark V2 contract" { python tools/validate-benchmark.py }
 } finally {
   Pop-Location
 }

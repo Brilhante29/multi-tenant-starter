@@ -1,0 +1,90 @@
+{
+  "schema_version" : 2,
+  "run_id" : "d28fdf7b-47fb-49de-8135-48c67efad36d",
+  "project" : "multi-tenant-starter",
+  "benchmark_id" : "postgres-schema-isolation",
+  "workload" : {
+    "version" : "2.0.0",
+    "fixture_digest" : "sha256:9665d5a721f8271050aee83153a752d285199db7ec5b717ee016e1969b73b2c2",
+    "config_digest" : "sha256:86ecf9a0bd7f3a2dce85b131eeaa471bfa3970150a9517e3e3c1e3b2dbb705be",
+    "warmup_iterations" : 2,
+    "measured_iterations" : 6,
+    "concurrency" : 1
+  },
+  "metrics" : [ {
+    "name" : "tenant_onboarding_p50_ms",
+    "value" : 14.498945,
+    "unit" : "ms/tenant",
+    "direction" : "lower_is_better",
+    "samples" : [ 16.720313, 13.965098, 14.498945 ],
+    "failures" : 0,
+    "summary" : {
+      "statistic" : "median_of_repetition_p50"
+    }
+  }, {
+    "name" : "tenant_onboarding_p95_ms",
+    "value" : 17.541314,
+    "unit" : "ms/tenant",
+    "direction" : "lower_is_better",
+    "samples" : [ 20.997321, 17.541314, 16.835854 ],
+    "failures" : 0,
+    "summary" : {
+      "statistic" : "median_of_repetition_p95"
+    }
+  }, {
+    "name" : "isolated_query_p95_ms",
+    "value" : 3.26786,
+    "unit" : "ms/query",
+    "direction" : "lower_is_better",
+    "samples" : [ 3.934975, 3.26786, 2.970725 ],
+    "failures" : 0,
+    "summary" : {
+      "statistic" : "median_of_repetition_p95"
+    }
+  }, {
+    "name" : "leakage_count",
+    "value" : 0.0,
+    "unit" : "count",
+    "direction" : "target",
+    "samples" : [ 0.0, 0.0, 0.0 ],
+    "failures" : 0,
+    "summary" : {
+      "target" : 0
+    }
+  }, {
+    "name" : "failures_count",
+    "value" : 0.0,
+    "unit" : "count",
+    "direction" : "target",
+    "samples" : [ 0.0, 0.0, 0.0 ],
+    "failures" : 0,
+    "summary" : {
+      "target" : 0
+    }
+  } ],
+  "execution" : {
+    "command" : "powershell -NoProfile -ExecutionPolicy Bypass -File tools/run-benchmark.ps1",
+    "started_at" : "2026-08-14T04:15:30.399400877Z",
+    "duration_seconds" : 1.963366887,
+    "exit_code" : 0,
+    "repeat" : 3
+  },
+  "environment" : {
+    "runtime" : "Java 21.0.11 / PostgreSQL 17.6",
+    "architecture" : "amd64",
+    "hardware_class" : "local-docker",
+    "cpus" : 6,
+    "postgres_version" : "17.6",
+    "postgres_image_digest" : "sha256:d741b376874687de90374fd34f55c6b2760e8f7bd7e4ae5cd47f50757fc08cf8"
+  },
+  "provenance" : {
+    "source_commit" : "08faedad0ac094302c645aeef4338541afebe88a",
+    "clean_tree" : true,
+    "image_ref" : "multi-tenant-starter:benchmark",
+    "image_digest" : "sha256:4d959dbb6a9758cbbbd52d018cdd3658726f1fd557b45d2fbe2a1f4cf4a04480",
+    "dependency_lock_digest" : "sha256:c42b9a556239601e2032b21a0c04626acd9d309c02ad1d42e4a0ac7f9e86210d",
+    "producer" : "local",
+    "artifact_digest" : "sha256:dd62ed5f264025a9bdcb704f841755983bdf86cf44c8c61c8c781510f6f79b27"
+  },
+  "comparability_key" : "multi-tenant-starter:postgres17:schema-per-tenant:t6:q25:repeat3"
+}

@@ -1,71 +1,84 @@
 # #17 multi-tenant-starter
 
-**Status:** benchmarked
+**14.499 ms p50 onboarding, 0 tenant leaks, and 0 failures on PostgreSQL 17.6.**
 
-**Proves:** multi-tenant real (schema-per-tenant isolation with ThreadLocal tenant context).
+This repository proves schema-per-tenant isolation with atomic onboarding, idempotent migrations, rollback after DDL failure, database ownership constraints, and concurrent provisioning. The benchmark used 2 warmup tenants and 3 measured repetitions of 6 tenants with 25 isolated queries per tenant.
 
-**Benchmark target:** tenant_onboarding_seconds.
+## Benchmark
 
-**Stack:** java21, spring-boot, postgresql, flyway, docker.
+| Metric | Result | Evidence |
+|---|---:|---|
+| Tenant onboarding p50 | **14.499 ms/tenant** | median of 3 repetition p50 values |
+| Tenant onboarding p95 | **17.541 ms/tenant** | median of 3 repetition p95 values |
+| Isolated query p95 | **3.268 ms/query** | median of 3 repetition p95 values |
+| Cross-tenant leakage | **0** | 450 measured queries |
+| Failures | **0** | 3 repetitions |
+
+Machine-readable result: [`benchmarks/results/multi-tenant-starter-v2.json`](benchmarks/results/multi-tenant-starter-v2.json). Results are local single-node evidence and do not represent managed PostgreSQL, WAN, hostile database roles, or thousands of schemas.
 
 ## Run
 
 ```bash
-docker build -t multi-tenant-starter .
-docker run --rm multi-tenant-starter
+docker compose up --build app
 ```
 
-Health endpoint: [http://localhost:8080/api/health](http://localhost:8080/api/health)
-
-## Benchmark
+The API is available at `http://localhost:8080`; health is at `GET /actuator/health`.
 
 ```bash
-docker run --rm multi-tenant-starter benchmark
+curl -X POST http://localhost:8080/api/tenants \
+  -H "Content-Type: application/json" \
+  -d '{"name":"acme"}'
 ```
 
-| Metric | Value | Unit |
-|---|---:|---:|---|
-| tenant_onboarding_seconds | 0.000154 | seconds/tenant |
+No paid credential or cloud account is required.
+
+## Verify
+
+PostgreSQL integration tests run entirely through Docker Compose:
+
+```bash
+docker compose --profile test run --rm test
+```
+
+Benchmark on Windows:
+
+```powershell
+./tools/run-benchmark.ps1
+```
+
+Benchmark on Linux/macOS:
+
+```bash
+./tools/run-benchmark.sh
+```
+
+Both benchmark commands build the current clean commit, capture image and dependency digests, execute at least three repetitions, write Benchmark Result V2 JSON, and reject nonzero leakage or failures.
 
 ## Architecture
 
-```
-src/main/java/com/portfolio/multitenant/
-  MultitenantApplication.java
-  domain/
-    Tenant.java                - Tenant entity: id, name, schema, status, createdAt
-    TenantRepository.java      - Port for tenant CRUD
-    DataSourceRouter.java      - Port for schema-per-tenant query routing
-    TenantContext.java         - ThreadLocal holder for current tenant
-  application/
-    TenantController.java      - REST: create tenant, list tenants
-    TenantService.java         - Create tenant: generate schema, run migration, register
-    HealthController.java      - Health check per tenant
-  infrastructure/
-    InMemoryTenantRepository.java - In-memory tenant store
-    InMemoryDataSourceRouter.java - In-memory schema-per-tenant isolation
-    SchemaInitializer.java     - Creates schema and runs migrations
-    SimpleMigrationRunner.java - Creates tables per tenant schema
-  benchmark/
-    TenantBenchmark.java       - Onboards N tenants, measures time per tenant
-    BenchmarkResult.java       - JSON result record
+```text
+REST / benchmark
+       |
+TenantService + TenantDataService
+       |
+registry | schema lifecycle | records | transaction | id ports
+       |
+Spring JDBC + Flyway + PostgreSQL 17.6
 ```
 
-### Dependency rule
+- `public.tenants` is the control-plane catalog.
+- Every tenant receives a generated `tenant_<uuid>` schema and versioned tables.
+- Registry insert, schema DDL, migration, and activation share one PostgreSQL transaction.
+- Tenant SQL uses only generated and regex-validated schema identifiers.
+- A per-schema CHECK constraint rejects rows owned by another tenant.
+- `TenantContext` is established and cleared around every data operation.
 
-`domain` defines ports (interfaces). `application` depends on domain. `infrastructure` implements domain ports. `benchmark` exercises application through domain ports.
+The domain and application layers import no Spring, JDBC, SQL, HTTP, Docker, or cloud SDK types. Messaging and cloud emulation are intentionally absent because onboarding and isolated queries are synchronous database concerns.
 
-### Multi-tenant strategy
+## Stack
 
-- **Schema-per-tenant** simulated in-memory with `Map<String, Map<String, List<Map>>>`.
-- **TenantContext** propagated via `ThreadLocal`.
-- Each tenant has an isolated data map (simulated schema).
-- **Migration** creates `users`, `orders`, and `products` tables per schema.
+Java 21, Spring Boot 3.4, Spring JDBC, Flyway 10, PostgreSQL 17.6, Gradle Wrapper with dependency locking, Docker Compose, JUnit 5, and GitHub Actions.
 
 ## References
 
-See REFERENCES.md.
-
-## License
-
-MIT
+See [`REFERENCES.md`](REFERENCES.md). Licensed under MIT.

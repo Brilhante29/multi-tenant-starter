@@ -28,4 +28,11 @@ git diff --check
 
 ## Handoff State
 
-SDD updated. PostgreSQL implementation, tests, benchmark evidence, README, and local commits are pending.
+PostgreSQL implementation, unit tests, Compose integration tests, benchmark V2 evidence, README, and local release commits are complete. Publication was intentionally not performed.
+
+## Verified Evidence
+
+- 12 unit tests passed in the Java 21 Docker build.
+- 4 PostgreSQL integration tests passed, including rollback, leakage constraint, idempotency, and 8-way concurrent onboarding.
+- Benchmark source: `08faedad0ac094302c645aeef4338541afebe88a`.
+- Benchmark: p50 `14.498945 ms/tenant`, p95 `17.541314 ms/tenant`, query p95 `3.26786 ms`, leakage `0`, failures `0`.

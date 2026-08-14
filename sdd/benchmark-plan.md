@@ -18,7 +18,7 @@ Linux/macOS/CI:
 ./tools/run-benchmark.sh
 ```
 
-Both commands build the exact source commit, start PostgreSQL with Docker Compose, run the workload, write `benchmarks/results/benchmark.json`, validate integrity, and remove the volume.
+Both commands require a clean tracked tree, build that source commit, start PostgreSQL with Docker Compose, run the workload, write `benchmarks/results/multi-tenant-starter-v2.json`, and validate integrity.
 
 ## Fixed Workload
 
@@ -46,3 +46,7 @@ The JSON records workload shape, warmup, repetitions, all samples, PostgreSQL ve
 ## Limits
 
 This is a local single-node benchmark. It does not model connection-pool saturation, noisy neighbors, schema counts in the thousands, WAN latency, managed-service behavior, or hostile database roles.
+
+## Recorded Baseline
+
+Source `08faedad0ac094302c645aeef4338541afebe88a` produced onboarding p50 `14.498945 ms`, onboarding p95 `17.541314 ms`, isolated-query p95 `3.26786 ms`, zero leakage, and zero failures across three repetitions.
