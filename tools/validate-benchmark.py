@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 
-RESULT = Path("benchmarks/results/multi-tenant-starter-v2.json")
+RESULT = Path(os.getenv("BENCHMARK_RESULT_PATH", "benchmarks/results/multi-tenant-starter-v2.json"))
 REQUIRED_METRICS = {
     "tenant_onboarding_p50_ms",
     "tenant_onboarding_p95_ms",

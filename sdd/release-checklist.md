@@ -15,7 +15,6 @@
 - [x] .gitignore covers build artifacts
 - [x] CI workflow validates same checks
 
-## Post-release
+- [x] CI smoke evidence is isolated from the canonical result.
 
-- [ ] Published to GitHub
-- [ ] CI passes on main branch
+The external release controller verifies the exact-head GitHub Actions run after push.

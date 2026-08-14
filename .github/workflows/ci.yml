@@ -47,11 +47,21 @@ jobs:
           exit 1
 
       - name: Benchmark V2
+        env:
+          BENCHMARK_RESULTS_DIR: ${{ runner.temp }}/multi-tenant-starter
         run: ./tools/run-benchmark.sh
 
       - name: Repository validation
         shell: pwsh
         run: ./tools/validate-project.ps1 -SkipDocker
+
+      - name: Upload benchmark smoke evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: benchmark-v2-${{ github.sha }}
+          path: ${{ runner.temp }}/multi-tenant-starter/multi-tenant-starter-v2.json
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Cleanup
         if: always()

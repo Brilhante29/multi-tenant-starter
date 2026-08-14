@@ -6,7 +6,7 @@ program:
   shared_assets:
     - TenantContext scoped execution pattern
     - Benchmark Result V2 contract
-status: ready-local
+status: published
 claim: PostgreSQL schema-per-tenant isolation with atomic onboarding, rollback, constraints, and concurrent access evidence
 stack:
   - java21

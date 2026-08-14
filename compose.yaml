@@ -36,7 +36,7 @@ services:
     ports:
       - "${APP_PORT:-8080}:8080"
     volumes:
-      - ./benchmarks/results:/app/benchmarks/results
+      - ${BENCHMARK_RESULTS_DIR:-./benchmarks/results}:/app/benchmarks/results
 
   test:
     profiles: ["test"]

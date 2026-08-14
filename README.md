@@ -53,6 +53,7 @@ Benchmark on Linux/macOS:
 ```
 
 Both benchmark commands build the current clean commit, capture image and dependency digests, execute at least three repetitions, write Benchmark Result V2 JSON, and reject nonzero leakage or failures.
+CI writes regenerated smoke evidence to `runner.temp` and uploads it separately, so the committed publication baseline is stable.
 
 ## Architecture
 

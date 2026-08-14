@@ -54,6 +54,31 @@ $requiredFiles = @(
 )
 foreach ($file in $requiredFiles) { Require-File $file }
 
+$projectPath = Join-Path $root "project.yaml"
+if (Test-Path -LiteralPath $projectPath -PathType Leaf) {
+  $project = Get-Content -Raw -LiteralPath $projectPath
+  if ($project -notmatch '(?m)^status: published\r?$') {
+    Add-Failure "project.yaml status must be published"
+  }
+  if ($project -notmatch '(?m)^  id: backend-reliability-platform\r?$') {
+    Add-Failure "project.yaml must belong to backend-reliability-platform"
+  }
+}
+
+$gradleIndex = git -C $root ls-files -s gradlew
+if (-not $gradleIndex -or $gradleIndex -notmatch '^100755 ') {
+  Add-Failure "gradlew must be tracked with executable mode 100755"
+}
+$global:LASTEXITCODE = 0
+
+$workflowPath = Join-Path $root ".github/workflows/ci.yml"
+if (Test-Path -LiteralPath $workflowPath -PathType Leaf) {
+  $workflow = Get-Content -Raw -LiteralPath $workflowPath
+  if ($workflow -notmatch 'runner.temp' -or $workflow -notmatch 'BENCHMARK_RESULTS_DIR') {
+    Add-Failure "CI benchmark smoke must not overwrite the canonical publication artifact"
+  }
+}
+
 $reuseReviewPath = Join-Path $root "sdd/reuse-improvement-review.md"
 if (Test-Path -LiteralPath $reuseReviewPath -PathType Leaf) {
   $reuseReview = Get-Content -Raw -LiteralPath $reuseReviewPath

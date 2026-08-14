@@ -4,9 +4,9 @@
 
 #17 `multi-tenant-starter`, program `backend-reliability-platform`.
 
-## Current Objective
+## Current State
 
-Replace the in-memory prototype with real PostgreSQL schema-per-tenant onboarding and evidence. Work only in this repository; do not push.
+The real PostgreSQL schema-per-tenant implementation and V2 publication evidence are complete. The portfolio release controller must verify CI against the exact pushed head.
 
 ## Non-Negotiable Invariants
 
@@ -28,7 +28,7 @@ git diff --check
 
 ## Handoff State
 
-PostgreSQL implementation, unit tests, Compose integration tests, benchmark V2 evidence, README, and local release commits are complete. Publication was intentionally not performed.
+PostgreSQL implementation, unit tests, Compose integration tests, benchmark V2 evidence, README, and release commits are complete. CI smoke output must stay under `runner.temp` and must not replace the canonical evidence.
 
 ## Verified Evidence
 
